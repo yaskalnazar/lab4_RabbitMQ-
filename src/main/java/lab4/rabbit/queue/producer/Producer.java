@@ -34,9 +34,18 @@ public class Producer {
             Channel channel = connection.createChannel()) {
             channel.queueDeclare(queueName, durable, false, false, queueArgs);
 
-            for (int i = 0; i < numberOfMessages; i++) {
+            channel.exchangeDeclare("my-dead-letter-exchange", "fanout");
+            channel.queueDeclare("my-dead-letter-queue", durable, false, false, null);
+            channel.queueBind("my-dead-letter-queue", "my-dead-letter-exchange", "bindingKey");
+
+
+            channel.exchangeDeclare("test_exchange", "fanout");
+            channel.queueBind(queueName, "test_exchange", "bindingKey");
+
+
+            for (int i = 1; i < numberOfMessages; i++) {
                 String message = "Message#" + i;
-                channel.basicPublish("", queueName, properties, message.getBytes());
+                channel.basicPublish("test_exchange", "bindingKey", properties, message.getBytes());
                 System.out.println("Sent '" + message + "'");
                 sleep(latency);
             }
